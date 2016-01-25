@@ -1,19 +1,21 @@
+#include <avr/wdt.h>
 #define INPUT_SIZE 25
+#define RED_MAX 255
+#define GREEN_MAX 110
+#define BLUE_MAX 95
+#define MAX 255
+#define TRAN_COUNT 5
+#define DELAY 2
+
 byte PIN_RED[2] = {9,3};
 byte PIN_GREEN[2] = {10,5};
 byte PIN_BLUE[2] = {11,6};
-byte PIN_TRAN[5] = {8,7,13,2,12};
-byte TRAN_COUNT = 4;
-byte MAX = 255;
-
-byte RED_MAX = 255;
-byte GREEN_MAX = 110;
-byte BLUE_MAX = 95;
-int DELAY = 2;
-byte TYPE = 3;
+byte PIN_TRAN[5] = {13,12,8,7,2};
+byte TYPE = 2;
 unsigned int rgbColor[6] = {255,0,0,0,0,255};
 
 void setup() {
+  wdt_disable();
   setColorRGB(rgbColor[0], rgbColor[1], rgbColor[2]);
   for(byte i = 0; i < TRAN_COUNT; i++) {
     digitalWrite(PIN_TRAN[i], LOW);
@@ -40,9 +42,7 @@ void serialType() {
   //Serial
   setColorRGB(rgbColor[0], rgbColor[1], rgbColor[2]);
   for(byte i = 0; i < TRAN_COUNT; i++) {
-    digitalWrite(PIN_TRAN[i], HIGH);
-    delay(DELAY);
-    digitalWrite(PIN_TRAN[i], LOW);
+    turnOn(i);
   }
 }
 
@@ -51,6 +51,7 @@ void fadeType() {
   rgbColor[0] = MAX;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
+  
   //Choose the colors to increment and decrement.
   for (int decColor = 0; decColor < 3; decColor += 1) {
     int incColor = decColor == 2 ? 0 : decColor + 1;
@@ -60,9 +61,7 @@ void fadeType() {
       rgbColor[incColor]++;
       setColorRGB(rgbColor[0], rgbColor[1], rgbColor[2]);
       for(byte i = 0; i < TRAN_COUNT; i++) {
-        digitalWrite(PIN_TRAN[i], HIGH);
-        delay(DELAY);
-        digitalWrite(PIN_TRAN[i], LOW);
+        turnOn(i);
       }
     }
     
@@ -71,9 +70,7 @@ void fadeType() {
       rgbColor[decColor]--;
       setColorRGB(rgbColor[0], rgbColor[1], rgbColor[2]);
       for(byte i = 0; i < TRAN_COUNT; i++) {
-        digitalWrite(PIN_TRAN[i], HIGH);
-        delay(DELAY);
-        digitalWrite(PIN_TRAN[i], LOW);
+        turnOn(i);
       }
     }
   }
@@ -83,9 +80,7 @@ void gradientType() {
   for(byte i = 0; i < TRAN_COUNT; i++) {
     setColorRGB(gradientCalc(rgbColor[0], rgbColor[3], i * 2), gradientCalc(rgbColor[1], rgbColor[4], i * 2), gradientCalc(rgbColor[2], rgbColor[5], i * 2), 0);
     setColorRGB(gradientCalc(rgbColor[0], rgbColor[3], (i * 2) + 1), gradientCalc(rgbColor[1], rgbColor[4], (i * 2) + 1), gradientCalc(rgbColor[2], rgbColor[5], (i * 2) + 1), 1);
-    digitalWrite(PIN_TRAN[i], HIGH);
-    delay(DELAY);
-    digitalWrite(PIN_TRAN[i], LOW);
+    turnOn(i);
   }
 }
 
@@ -145,25 +140,33 @@ void readInput() {
 
 boolean readColor(byte shift)
 {
-    char* red = strtok(0, ",");
-    char* green = strtok(0, ",");
-    char* blue = strtok(0, ",");
-    
-    if(red == 0 || red == NULL || green == 0 || green == NULL || blue == 0 || blue == NULL) {
-      Serial.println("Invalid colors");
-      return false;
-    }
-    
-    Serial.print("Red: ");
-    Serial.print(red);
-    Serial.print(" Green: ");
-    Serial.print(green);
-    Serial.print(" Blue: ");
-    Serial.println(blue);
-    
-    rgbColor[0 + shift] = atoi(red);
-    rgbColor[1 + shift] = atoi(green);
-    rgbColor[2 + shift] = atoi(blue);
-    
-    return true;
+  char* red = strtok(0, ",");
+  char* green = strtok(0, ",");
+  char* blue = strtok(0, ",");
+  
+  if(red == 0 || red == NULL || green == 0 || green == NULL || blue == 0 || blue == NULL) {
+    Serial.println("Invalid colors");
+    return false;
+  }
+  
+  Serial.print("Red: ");
+  Serial.print(red);
+  Serial.print(" Green: ");
+  Serial.print(green);
+  Serial.print(" Blue: ");
+  Serial.println(blue);
+  
+  rgbColor[0 + shift] = atoi(red);
+  rgbColor[1 + shift] = atoi(green);
+  rgbColor[2 + shift] = atoi(blue);
+  
+  return true;
+}
+
+void turnOn(byte index)
+{
+  //byte previous = (index < TRAN_COUNT) ? index : 0;
+  digitalWrite(PIN_TRAN[index], HIGH);
+  delay(DELAY);
+  digitalWrite(PIN_TRAN[index], LOW);
 }
